@@ -23,19 +23,19 @@ The general overview of how the surfaces interact with the registration framewor
 
 \begin{figure}
   \includegraphics[width=\linewidth]{figure01}
-  \caption{The active contours are defined as the interfacing surfaces of the competing
-    \glspl{roi} $\Omega_l$, which
-  are represented in green and dark blue in this close-up.
-  They evolve iteratively following their inward normals $\hat{n}_i$ at each vertex
+  \caption{The interfacing surfaces $\Gamma_m$ between the competing \glspl{roi} $\Omega_l$,
+  play the role of active contours which drive the registration process.
+  They evolve iteratively along the normal $\hat{\mathbf{n}}_i$ of the surface at each vertex
     $\vec{v}_i$ of the mesh.
   The gradient speeds $\bar{s}_i$ drive registration, which are computed as the disparity of the data
     energies with respect to the two limiting regions of $M(\vec{v}_i)$, the features of the image
-    $M$ in the location of vertex $\vec{v}_i$ \citepalias[see][equation SM5]{esteban_useful_2015}.
-  In this figure, $\bar{s}_1$ is written in the lower
-    box, with $\Omega_{wm}$ in the inner limiting region, $\Omega_{gm}$ the outer region, and
-    $w_{0,1}$ is the relative area associated with vertex $\vec{v}_1$ with respect to
-    the total area of surface $\Gamma_0$.
-      }\label{fig:regseg-method}
+    $M$ in the location of vertex $\vec{v}_i$.
+  The computation of shape-gradients is developed in \ref{app:shape_gradients}.
+  In this figure, the $\bar{s}_1$ derived from \autoref{eq:regseg-shape_gradient_disc2} is 
+    written in the lower box, with $\Omega_{wm}$ being the inner limiting region, $\Omega_{gm}$
+    the outer region, and $w_{0,1}$ the relative area associated with vertex $\vec{v}_1$
+    with respect to the total area of surface $\Gamma_0$.
+  }\label{fig:regseg-method}
 \end{figure}
 
 \paragraph*{Cost-function derivation}
@@ -52,15 +52,15 @@ Using Bayes' rule, the posterior likelihood is computed as:
   \label{eq:regseg-bayes_rule}
   \end{equation}
   where $P(M \mid U,\omegaset)$ is the data likelihood.
-Since $\omegaset$ are mapped by $U$, we simplify
+Since $\omegaset$ is mapped by $U$, we simplify
   $P(U, \omegaset) = P(U) \implies P(M \mid U,\omegaset) = P(M \mid U)$.
 The best estimate $\hat{U}$ then satisfies the maximum a posteriori criterion
   and it aligns $\gammaset_R$ into $M$.
-First, we assume independence between pixels, and thus we break down the
-  global data likelihood into a product of pixel-wise conditional probabilities:
+First, we assume independence between \revcomment[R\#3-C10]{voxel}s, and thus we break down the
+  global data likelihood into a product of \revcomment[R\#3-C10]{voxel}-wise conditional probabilities:
 
   \begin{equation}
-  P(M \mid U) = \underset{l}{\prod} \underset{\vec{r}\in \Omega_l}{\prod}
+  P(M \mid U) = \underset{l}{\prod} \underset{\vec{r}'\in \Omega_l}{\prod}
     P\left( \vec{f}' \mid U \right),
   \label{eq:regseg-bayes_aposteriori}
   \end{equation}
@@ -70,68 +70,69 @@ For convenience and because it has been shown to be an appropriate approximation
   \citep{leemput_automated_1999,cuadra_comparison_2005}, we introduce two assumptions for each
   region $\Omega_l$:
   1) the features are i.i.d.; and 2) they can be modeled by multivariate normal
-  distributions \citep{esteban_mbis_2014} with parameters
+  distributions 
+  $\mathcal{N} (\vec{f}' \mid \boldsymbol{\mu}_l, \boldsymbol{\Sigma}_{l} )$, with parameters
   $\lbrace \boldsymbol{\mu}_l, \boldsymbol{\Sigma}_{l} \rbrace$
-  for each region $\Omega_l$.
-\revcomment[C4 (R.1)]{%
-Even though the features being segmented are not generally i.i.d., the spatial interdependency of
-  voxels is implicitly supported by the piecewise smooth partition of the space \omegaset{}.
-In \autoref{fig:regseg-model} it is shown that marginal distributions of data can be approximated by
-  multivariate normal distributions.} Therefore,
+  for each region $\Omega_l$ \citep{esteban_mbis_2014}:
 
   \begin{align}
-  P( M \mid U) &= \underset{l}{\prod} \underset{\vec{r} \in \Omega_l}{\prod}
-  \mathcal{N} ( \vec{f} \mid \boldsymbol{\mu}_l, \boldsymbol{\Sigma}_{l} )
+  P( M \mid U) &= \underset{l}{\prod} \underset{\vec{r}' \in \Omega_l}{\prod}
+  \mathcal{N} (\vec{f}' \mid \boldsymbol{\mu}_l, \boldsymbol{\Sigma}_{l} )
   \ifthenelse{\boolean{review}}{=}{= \notag\\ &=}
-  \underset{l}{\prod} \underset{\vec{r} \in \Omega_l}{\prod} \frac{1}{ \sqrt{(2\pi)^{C}\,\left|\boldsymbol{\Sigma}_{l}\right|}}\,{e^{\left(-\frac{1}{2}
+  \underset{l}{\prod} \underset{\vec{r}' \in \Omega_l}{\prod} \frac{1}{ \sqrt{(2\pi)^{C}\,\left|\boldsymbol{\Sigma}_{l}\right|}}\,{e^{\left(-\frac{1}{2}
   \mdist{f'}{l} \right)}},
   \label{eq:regseg-pdf}
-  \end{align}
-  using $\mdist{f}{l}$ to denote the squared \emph{Mahalanobis distance} of $\vec{f}$ with respect
+  \end{align}%
+  using $\mdist{f'}{l}$ to denote the squared \emph{Mahalanobis distance} of $\vec{f}'$ with respect
   to the descriptors of region $l$ as
-  $\mdist{f}{l} = (\vec{f} - \boldsymbol{\mu}_l)^T \, {\boldsymbol{\Sigma}_l}^{-1} \, (\vec{f} - \boldsymbol{\mu}_l)$.
+  $\mdist{f'}{l} = (\vec{f}' - \boldsymbol{\mu}_l)^T \, {\boldsymbol{\Sigma}_l}^{-1} \, (\vec{f}' - \boldsymbol{\mu}_l)$.
 $C$ is the number of channels comprised in the image $M$.
+Even though the features being segmented are not generally i.i.d., the 
+  spatial interdependency of voxels is implicitly supported by the piecewise smooth
+  partition of the space \omegaset{}.
 In fact, the projection of $\gammaset_R$ onto $M$ is an implicit segmentation model, for which
   the covariance matrix $\boldsymbol{\Sigma}_l$ of each region is minimized.
-\revcomment[C2 (R.1)]{%
-In \autoref{fig:regseg-model},
-  this minimization is illustrated for the segmentation of the \gls*{fa} and the \gls*{adc} maps
-  of one subject.}
+The \autoref{fig:regseg-model} shows how the joint distribution of 
+  the input images is approximated with a mixture of multivariate normal distributions,
+  and this minimization is illustrated for the segmentation of the \gls*{fa} and the \gls*{adc} maps
+  of one subject.
 
 \begin{figure*}
-\includestandalone[width=\linewidth]{figure02-model}
-% \includegraphics[width=\linewidth]{figure04A}
-% \includegraphics[width=\linewidth]{figure04B}
-% \includegraphics[width=\linewidth]{figure04C}
+\includestandalone[width=\textwidth]{figure02}
 \caption{%
-\revcomment{%
-Evolution of the segmentation model defined by the homogeneous regions $\Omega_l$
-  for a real dataset.
-The left plot in each panel represents a kernel density estimate of the location and spread of
-  each region $\Omega_l$ in the bivariate feature space of $M$, which comprises
-  the \gls*{fa} and \gls*{adc} maps.
-At the top and the right margins, the marginal distributions of $\Omega_l$ on the \gls*{fa} and
-  \gls*{adc} are respectively displayed.
-On the right side, the sampled distribution of each region is shown in small scatter plot, in contrast to
-  the complete bivariate data.
-A) shows the initialization of the model, when the anatomically-correct surfaces are not
-  mapped into the \gls*{dmri} space.
-The panel shows the resulting conditional distributions of segmenting the (distorted) \gls*{fa} and
-  \gls*{adc} maps with the original (undistorted) surfaces.
-Panel B shows the equivalent information, using the surfaces that are perfectly mapped into the
-  distorted \gls*{dmri} space.
-Since the surfaces are now aligned in $M$, the spreads of the conditional distributions for each region are
-  reduced with respect to those in A.
-Panel C, after \regseg{} registration, shows how the covariance matrices $\boldsymbol{\Sigma}_l$
-  are minimized with respect to panel A, and the resulting segmentation is close
-  to the theoretical situation presented in panel B.}
+Evolution of the segmentation model defined by the homogeneous regions $\Omega_l$,
+  for one real dataset.
+Panel (A, left) shows the joint distribution of the \gls*{fa} and \gls*{adc} conditioned to
+  the segmentation \omegaset{} defined by the surfaces $\gammaset_R$ extracted from
+  the \gls*{t1} image.
+The plot was generated for reference using undistorted diffusion data, and
+  therefore, $\gammaset_R$ is aligned with the \gls*{fa} and the \gls*{adc}.
+The problem arises when the diffusion data present deformation, and the
+  contours $\gammaset_R$ do not fit within the data (A, center).
+After registration with \regseg{}, the contours are mapped onto the
+  diffusion data (A, right), and the joint density plot is closer to the reference
+  situation.
+In panel (B), the three plots in (A) are decomposed tissue-wise.
+Using filled contours, the bivariate distribution of each tissue is highlighted in its designated color,
+  and represented over the remaining tissues (in gray colors).
+To help assessment, dashed contours in black-to-white colors represent
+  the corresponding distribution in the reference plot.
+The registration process optimizes the segmentation model of \regseg{},
+  and thus, the distribution of each region after registration is located
+  closer to that corresponding in the reference situation, the shape of the distribution
+  is more similar to the reference, and their spread is also reduced.
+The effects of optimization are more noticeable on the \gls*{gm} ($\Omega_\text{GM}$) and
+  the \gls*{wm} ($\Omega_\text{WM}$).
+Particularly, the \gls*{wm} typically shows a bimodal distribution when the contours
+  \gammaset{} do not fit the data.
+{\color{revcolor} The plots in (A) and (B) are provided at full-size in the
+  \citetalias[figures S8, S9]{esteban_useful_2016}.}
 }\label{fig:regseg-model}
-\todo[inline]{C5 (R.1)}
 \end{figure*}
 
 \paragraph*{Regularization}
-The smoothness of the resulting displacements field is induced by a Thikonov regularization
-  prior:
+The smoothness of the resulting displacement field is induced
+  by a Thikonov regularization prior:
 
   \begin{align}
   P(U) = \underset{\vec{r}}{\prod}\, p(\vec{u}) &=
@@ -140,20 +141,23 @@ The smoothness of the resulting displacements field is induced by a Thikonov reg
   p_1(\vec{u}) &= \mathcal{N}(  \nabla \vec{u} \mid 0, \mathbf{B}^{-1}),
   \label{eq:regseg-thikonov}
   \end{align}
- which requires that the distortion and its gradient have zero
-  mean and variance governed by the matrices $\mathbf{A}$ and $\mathbf{B}$.
+ which requires that the distortion and its gradient have zero mean,
+   and variance governed by the matrices $\mathbf{A}$ and $\mathbf{B}$.
+Therefore, $\mathbf{A}$ and $\mathbf{B}$ are tensors that modulate the regularization, and
+  produce deformations with preferential directions.
 Finally, the maximum a posteriori problem is adapted to a variational problem where we search for
   the minimum of an energy functional by applying $E(\vec{u}) = -\log \{P( M \mid U) \, P(U)\}$:
 
   \begin{align}
   E(\vec{u}) &= -\log \underset{l}{\prod}
-  \underset{\vec{r} \in \Omega_l}{\prod}
-  \mathcal{N} \left( \vec{f}' \mid \boldsymbol{\mu}_l, \boldsymbol{\Sigma}_l \right)\,p_0( \vec{u})\,p_1( \vec{u}) = \notag\\ &=
-  \const + \underset{l}{\sum} \int_{\Omega_l} \mdist{f'}{l} \,d\vec{r} \,
-  \ifthenelse{\boolean{review}}{+}{+ \notag\\ &+}
-  \int_{\Omega} \frac12 \left[ \vec{u}^T \mathbf{A} \vec{u} + (\nabla \vec{u})^T \mathbf{B} (\nabla \vec{u}) \right] \,d\vec{r}.
+  \underset{\vec{r}' \in \Omega_l}{\prod}
+  \mathcal{N} \left( \vec{f}' \mid \boldsymbol{\mu}_l, \boldsymbol{\Sigma}_l \right)\,p_0( \vec{u})\,p_1( \vec{u}) =
+\notag\\ &= - \underset{l}{\sum} \int_{\Omega_l} \Big\{ \log \left[ \mathcal{N} \left( \vec{f}' \mid \boldsymbol{\mu}_l, \boldsymbol{\Sigma}_l \right) \right] \, + \log \left[ p_0( \vec{u})\,p_1( \vec{u}) \right] \Big\} \, d\vec{r}'
+   = \notag\\ &=
+  \const + \underset{l}{\sum} \Big\{ \int_{\Omega_l} \mdist{f'}{l} \,d\vec{r} \Big\} \,
+  + \int_{\Omega} \frac12 \left[ \vec{u}^T \mathbf{A} \vec{u} + (\nabla \vec{u})^T \mathbf{B} (\nabla \vec{u}) \right] \,d\vec{r}'.
   \label{eq:regseg-energy}
-  \end{align}
+  \end{align}%
 This expression is the dual of the Mumford-Shah functional that corresponds
   to the framework of \acrlong*{acwe} \citep{chan_active_2001}
   with the anisotropic regularization term of \cite{nagel_investigation_1986}.
@@ -188,34 +192,49 @@ To find the minimum of the energy functional \eqref{eq:regseg-energy},
   where $t$ is an artificial time parameter of the contour
   evolution and $\vec{u}_k$ are the parameters that support the estimate
   $\hat{U}$ of the transformation at the current time point.
-Let us assume that the anisotropy is aligned with the imaging axes to simplify
-  \eqref{eq:regseg-energy} as expression \eqref{eq:regseg-app_energy} in \ref{app:reg_term},
-  and thus to compute its derivative \eqref{eq:regseg-general_gradient_descent}:
+Let us assume that the preferential directions of
+  the displacement are aligned with the imaging axes to simplify \eqref{eq:regseg-energy} as expression 
+  \eqref{eq:regseg-app_energy} in \ref{app:reg_term}, and thus to compute its
+  derivative \eqref{eq:regseg-general_gradient_descent}:
 
   \begin{align}
   \frac{\partial E(\vec{u})}{\partial \vec{u}_k} &=
   \frac{ \partial }{\partial \vec{u}_k} \Big\{
-  \underset{l}{\sum} \int_{\Omega_l} \mdist{f'}{l} \,d\vec{r} \,
-  \ifthenelse{\boolean{review}}{+}{+ \notag\\ &+}
-  \int_{\Omega} \frac12 [ \boldsymbol{\alpha} \cdot \vec{u}^{\circ2}
-  + \boldsymbol{\beta} \cdot (\nabla \vec{u})^{\circ2} ] \,d\vec{r}
+  \underset{l}{\sum} \big[ \int_{\Omega_l} \mdist{f'}{l} \,d\vec{r}' \big] \,
+  + \int_{\Omega} \frac12 [ \boldsymbol{\alpha} \cdot \vec{u}^{\circ2}
+  + \boldsymbol{\beta} \cdot (\nabla \vec{u})^{\circ2} ] \,d\vec{r}'
   \Big\},
   \label{eq:regseg-gradient_descent}
   \end{align}
-  where $\vec{u}^{\circ2} = \vec{u}^T \cdot \vec{u}$.
+  where $\vec{u}^{\circ2} = \vec{u}^T \cdot \vec{u}$,
+  and $\{\boldsymbol{\alpha}, \boldsymbol{\beta}\}$ are the expected variances along
+  the imaging axes of the displacement field and its gradient, respectively.
 Then, the data and regularization terms are split and discretized to compute their
   derivatives.
-The computation of the explicit shape gradients at each $\vec{v}_i'$ is illustrated in \autoref{fig:regseg-method}.
-Then, \eqref{eq:regseg-gradient_descent} can be reformulated as \citepalias[see][equations SM6-SM12]{esteban_useful_2015}:
+The derivative of the data term is computed using explicit shape gradients (see \ref{app:shape_gradients}),
+  which finally lead to obtain vertex-wise speeds of the gradient $\bar{s}_i$ as
+  illustrated in \autoref{fig:regseg-method}.
+\revcomment[R\#1-C4]{%
+The shape gradient contributions $\vec{g}_k$ on the field coefficients $\vec{u}_k$
+  can then be computed }%
+using the expression \eqref{eq:regseg-gradient_wshape}
+\revcomment[R\#1-C4]{of \ref{app:shape_gradients}, obtaining:
+
+\begin{equation}
+  \vec{g}_k = - \underset{i}{\sum} \bar{s}_i \cdot \psi_k(\vec{v}_i) \, \hat{\vec{e}}.
+  \label{eq:regseg-shape_gradient_final}
+\end{equation}
+
+Then,} introducing the analytical derivative of the regularization term,
+  the \autoref{eq:regseg-gradient_descent} is reformulated as:
 
   \begin{align}
   \frac{\partial E(\vec{u})}{\partial \vec{u}_k} &=
   \vec{g}_k  + \boldsymbol{\alpha} \cdot \vec{u}_k - \boldsymbol{\beta} \cdot (\Delta \vec{u}_k).
   \label{eq:regseg-final_gradient}
   \end{align}
-
 Finally, to descend this gradient, we establish a semi-implicit Euler scheme
-  \citepalias[see][section S1.3]{esteban_useful_2015},
+  \citepalias[see][section S1.3]{esteban_useful_2016},
   with a step size parameter $\delta$, which we solve in the spectral domain as follows:
 
   \begin{align}
@@ -231,10 +250,11 @@ Finally, to descend this gradient, we establish a semi-implicit Euler scheme
 The \regseg{} tool includes a multiresolution strategy on the free-form deformation field.
 Registration pyramids are created by setting the spacing between the control points of the B-spline basis
   functions for each level of the multiresolution strategy.
-The implementation details as well as other features (such as the sparse matrix approach
-  to fast interpolation) and the main parameters
-  (such as $\delta$, $\boldsymbol{\alpha}$, $\boldsymbol{\beta}$, the B-spline grid resolutions,
-  and target image smoothing) are discussed in the \citetalias[][section S1]{esteban_useful_2015}.
+As a rule of thumb, for a $\delta =$ 1.0, both $\boldsymbol{\alpha}$
+  and $\boldsymbol{\beta}$ will typically be in the range [0.0, 1.0].
+The parameters used ($\delta$, $\boldsymbol{\alpha}$, $\boldsymbol{\beta}$, the B-spline grid resolutions,
+  and target image smoothing), the implementation details, and other features such as the sparse matrix
+  approach to fast interpolation are discussed in the \citetalias[][section S1]{esteban_useful_2016}.
 
 \subsection{Evaluation protocol}\label{sec:regseg-evaluation_protocol}
 In order to assess the performance of \regseg{}, we defined the following general
@@ -245,14 +265,13 @@ In order to assess the performance of \regseg{}, we defined the following genera
 3) Execute \regseg{} with $\gammaset_R$ and use the warped data as inputs; and
 4) Perform a visual assessment and compute the error metrics.
 
-\revcomment[C20 (R.2)]{%
 A first proof of concept is introduced to demonstrate \regseg{} in digital phantoms
   with simple geometries, using $U_\text{true}$ without directional restrictions.
 Then, \regseg{} is evaluated in a framework using undistorted \gls*{dmri} datasets,
   and $U_\text{true}$ is derived from the corresponding inhomogeneity fieldmap of
   the subject.
-Therefore, the deformation field is nonzero only in the \gls*{pe} axis,
-  and resembles a real \gls*{epi} distortion.}
+Therefore, the deformation field is nonzero only in the \acrfull*{pe} axis,
+  and reproduces a real \gls*{epi} distortion.
 The adaptation of the evaluation protocol to the simulated phantoms and the real data is
   explained in the following sections.
 
@@ -280,10 +299,10 @@ With the second warping, we aimed to obtain a field with smoothness
   \citep{irfanoglu_susceptibility_2011}.
 Therefore, the control points were separated by 25.25 mm ($u_d\leq$ 10.10 mm).
 After generating the ground-truth deformation, the original surfaces
-  were warped by interpolating the displacements field at each vertex.
+  were warped by interpolating the displacement field at each vertex.
 The warped surfaces $\gammaset_\text{true}$ were binarized to generate tissue fractions
   at low (\isores[mm]{2.0}) and high (\isores[mm]{1.0}) resolutions.
-Using a \gls*{mr} simulator \citep{caruyer_phantomas_2014}, we synthesized
+Using an \acrshort*{mri} simulator \citep{caruyer_phantomas_2014}, we synthesized
   \gls*{t1} (TE/TR= 10/1500 ms) and \gls*{t2} images (TE/TR= 90/5000 ms), which
   corresponded to each phantom type, with each at two resolutions
   (1.0 mm and 2.0 mm isotropic).
@@ -296,14 +315,14 @@ In total, 1200 experiments (four phantom types $\times$ 150 random warpings $\ti
   performed according to the workflow illustrated in \autoref{fig:regseg-evphantoms}.
 
 \begin{figure*}
-\includegraphics[width=\linewidth]{figure02}
+\includegraphics[width=\linewidth]{figure03}
 \caption{Evaluation of \regseg{} using phantom data according to the following instrumental workflow.
-  1) The reference surfaces $\gammaset_R$ are triangularized meshes extracted from the four binary shapes (i.e., ``box'', ``ball'', ``L'', ``gyrus'').
+  1) The reference surfaces $\gammaset_R$ are triangle meshes extracted from the four binary shapes (i.e., ``box'', ``ball'', ``L'', ``gyrus'').
   2) A ground-truth displacement field was generated as described in \autoref{sec:regseg-digital_phantoms}, and applied to warp
       $\gammaset_R$, thereby obtaining $\gammaset_\text{true}$.
   3) After being warped, $\gammaset_\text{true}$ were projected onto the corresponding discrete 3D volume and downsampled to create partial volume effects at two resolutions,
      i.e., \isores[mm]{2.0} and \isores[mm]{1.0}, thereby producing sets of tissue fractions maps.
-  4) The tissue fractions were fed into a \acrfull*{mr} simulator, which generated \acrfull*{t1} and \acrfull*{t2} -like images at the
+  4) The tissue fractions were fed into an \acrshort*{mri} simulator, which generated \acrfull*{t1} and \acrfull*{t2} -like images at the
      two possible resolutions.
   5) The \regseg{} tool was applied using the warped test images as multispectral moving images and $\gammaset_R$ as shape priors.
   6) The agreement between the surfaces fitted by \regseg{} ($\hat{\gammaset}_\text{test}$) and $\gammaset_\text{true}$ were assessed
@@ -312,13 +331,12 @@ In total, 1200 experiments (four phantom types $\times$ 150 random warpings $\ti
 \end{figure*}
 
 \paragraph*{Segmentation model and settings}
-\revcomment[C6 (R.2)]{%
 The segmentation model of the phantoms is implicitly defined:
   all phantoms comprehend an inner surface enclosing a uniform \gls*{wm}-like region,
   and an outer surface wrapping a \gls*{gm}-like layer.
 The outside is filled with uniform background (see \autoref{fig:regseg-evphantoms}).
 All the experimental settings used for the phantoms are made available in
-  a unique configuration file\footnote{\url{https://github.com/oesteban/RegSeg/blob/master/Scripts/pyacwereg/data/regseg_default.json}}.}
+  a unique configuration file\footnote{\url{https://github.com/oesteban/RegSeg/blob/master/Scripts/pyacwereg/data/regseg_default.json}}.
 
 \subsection{Real datasets} \label{sec:regseg-human_connectome}
 The experimental framework for the real datasets is presented in \autoref{fig:regseg-evworkflows},
@@ -326,7 +344,7 @@ which extends our previous evaluation \citep{esteban_simulationbased_2014} of di
   using \gls*{dmri} phantoms.
 
 \begin{figure*}
-\includegraphics[width=\linewidth]{figure03}
+\includegraphics[width=\linewidth]{figure04}
 \caption{Experimental workflow employed to process real data from the \acrfull*{hcp}.
   1) $\gammaset_R$ were extracted from the anatomical reference (\gls*{t1} image).
   2) For use as the ground truth, we generated a plausible synthetic distortion $U_\text{true}$
@@ -338,18 +356,16 @@ which extends our previous evaluation \citep{esteban_simulationbased_2014} of di
   4) The method was run to obtain $U_\text{test} = \hat{U}_\text{true}$, i.e., the estimate of
     the ground-truth deformation.
   5) The results were evaluated visually and quantitatively.
-  \revcomment{%
-  The arrows point to edges in the target images (light-yellow arrows for \gls*{fa}, blue for \gls*{adc}) that
-    should be aligned with a surface, showing how distortion limits the direct mapping from the structural space
-    in which the contours are defined.}}\label{fig:regseg-evworkflows}
-  \todo[inline]{C7 (R.1) - Added clarification text in the figure, under the label ``Diffusion MRI''. \par
-  C23 (R.2) - Caption was modified: added text to describe the arrows annotating 5 more precisely.}%
+  The arrows in the step (5) point to edges in the target images (light-yellow arrows for \gls*{fa}, blue for 
+    \gls*{adc}) that should be aligned with a surface, showing how distortion limits the direct mapping from
+    the structural space in which the contours are defined.}\label{fig:regseg-evworkflows}
 \end{figure*}
 
 
 \paragraph*{Data}
 To evaluate \regseg{} using real \gls*{dmri} data obtained from human brains,
-  we collected 16 subjects from the \gls*{hcp} database.
+  we collected 16 subjects from the \revcomment[R\#3-C9]{Q3 Release of the}
+  \gls*{hcp} database.
 The original acquisitions are released within ``unprocessed'' packages, whereas
   the ``minimally preprocessed'' packages contain the corresponding images after
   some processing (correction for several artifacts, brain-extraction, spatial
@@ -358,10 +374,15 @@ We refer the reader to \citet{essen_human_2012} for exact details of the acquisi
   parameters and \citet{glasser_minimal_2013} for the preprocessing issues.
 These datasets comprise a large set of images, including \gls*{t1}, \gls*{t2}, and
   multi-shell \gls*{dmri} images.
-\revcomment[C7 (R.1)]{%
 Since we obtained the \gls*{dmri} data from the minimally preprocessed package, these
   images are corrected for \gls*{epi} distortions and spatially normalized in
-  \gls*{t1} space.}
+  \gls*{t1} space.
+\revcomment[R\#3-C9]{In the Q3 Release of the \gls*{hcp}, the \gls*{dmri} session includes
+  six runs, two runs for each of three different gradient tables, and each table is acquired
+  once with right-to-left and left-to-right encoding polarities, respectively.
+Then, the diffusion datasets with opposed polarities are corrected for susceptibility
+  distortions using the \emph{TOPUP} tool \citep{andersson_how_2003}
+  before producing the released ``minimally preprocessed'' data}.
 
 \paragraph*{Segmentation model}
 Based on our experience % \citep{esteban_brain_2012}
@@ -370,20 +391,20 @@ Based on our experience % \citep{esteban_brain_2012}
   from \gls*{dmri} data.
 After evaluating several alternative models, we empirically defined a partition \omegaset{}
   according to the following six regions:
-  1) thalamus ($\Omega_{Tha}$);
-  2) ventricular system and deep \gls*{gm} structures ($\Omega_{VdGM}$);
-  3) cerebral \gls*{wm} ($\Omega_{WM}$);
-  4) brain stem and cerebellar \gls*{wm} ($\Omega_{bst}$);
-  5) cerebellar \gls*{gm} ($\Omega_{cbGM}$); and
-  6) cortical \gls*{gm} ($\Omega_{GM}$).
+  1) thalamus ($\Omega_\text{Tha}$);
+  2) ventricular system and deep \gls*{gm} structures ($\Omega_\text{VdGM}$);
+  3) cerebral \gls*{wm} ($\Omega_\text{WM}$);
+  4) brain stem and cerebellar \gls*{wm} ($\Omega_\text{bst}$);
+  5) cerebellar \gls*{gm} ($\Omega_\text{cbGM}$); and
+  6) cortical \gls*{gm} ($\Omega_\text{GM}$).
 Using tools in \emph{FreeSurfer} and appropriate selections of labels in the
   \emph{aparc} segmentation released with the \gls*{hcp} data, we extracted the $\gammaset_R$ set for the
   reference surfaces.
 The segmentation model corresponding to this partition is shown in \autoref{fig:regseg-model}
-  and discussed in greater detail in the \citetalias[section S4]{esteban_useful_2015}.
+  and discussed in greater detail in the \citetalias[section S4]{esteban_useful_2016}.
 
 \paragraph*{Ground-truth generation}
-Realistic deformation was achieved by generating displacements fields that satisfy the theoretical
+Realistic deformation was achieved by generating displacement fields that satisfy the theoretical
   properties of distortion.
 The displacements along the \gls*{pe} axis of the \gls*{dmri} image are related to the local
   deviation of the field $\Delta B_0(\vec{r})$ from its nominal value $B_0$  \citep{jezzard_correction_1995},
@@ -394,8 +415,8 @@ The displacements along the \gls*{pe} axis of the \gls*{dmri} image are related 
   \label{eq:regseg-fieldmap}
   \end{equation}
 where $\gamma$ is the gyromagnetic ratio, $T_{acq}$ is the readout time, and
-  $s_\text{PE}$ is the pixel size along \gls*{pe}.
-Certain \gls*{mr} sequences are designed to estimate $\Delta B_0$, thereby obtaining
+  $s_\text{PE}$ is the \revcomment[R\#3-C10]{voxel} size along \gls*{pe}.
+Certain \acrshort*{mri} sequences are designed to estimate $\Delta B_0$, thereby obtaining
   the so-called fieldmap.
 We derived the deformation $U_\text{true}$ from the fieldmap image released with
   the corresponding packages of each dataset in the \gls*{hcp}.
@@ -412,27 +433,24 @@ For five test datasets, we uniformly sampled the space of distortions
   (with $\epsilon \in [-1.1, 1.1]$ and $u_\text{PE}$ from \eqref{eq:regseg-fieldmap}),
   and we evaluated the data term of the cost function \eqref{eq:regseg-energy}.
 The minimum of the cost function (\autoref{sec:regseg-methods_map}) was consistently located at
-  $\epsilon=0.0$ (the ground-truth) for all of the cases \citepalias[figure S2]{esteban_useful_2015}.
+  $\epsilon=0.0$ (the ground-truth) for all of the cases \citepalias[figure S2]{esteban_useful_2016}.
 
 \paragraph*{Settings} %
-\revcomment[C5 (R.1)]{%
 \Regseg{} accepts an affine mapping from surface-space to the \gls*{dmri} data as initialization.
 However, the images provided by the \gls*{hcp} are already spatially normalized.
-Therefore, the initial estimation of distortion is zero in this experiment.}
-\revcomment[C20 (R.2)]{%
+Therefore, the initial estimation of distortion is zero in this experiment.
 Since the distortion $U_\text{true}$ is aligned along the \gls*{pe} direction ($y$-axis in our settings),
-  \regseg{} was configured to allow nonzero displacements only on that corresponding direction.}
-\revcomment[C6 (R.1)]{%
+  \regseg{} was configured to allow nonzero displacements only on that corresponding direction.
 For the experiments on real data, \regseg{} established a multi-resolution pyramid of
-  B-Spline functions, with control points distributed on grids of the following spacings:
+  B-spline functions, with control points distributed on grids of the following spacings:
   40$\times$100$\times$40 [mm] for the first (coarser) level, \isores[mm]{30} for the second level,
   and 20$\times$30$\times$10 [mm] in the third level.
 Only the first and second levels included Gaussian smoothing of the target image ($\sigma$ = [2.0, 0.5] mm,
   respectively).
 The actual choices of the parameter settings are publicly distributed with the source code for the
-  experiments\footnote{\url{https://github.com/oesteban/RegSeg/tree/master/Scripts/pyacwereg/data/regseg_hcp.json}}.}
+  experiments\footnote{\url{https://github.com/oesteban/RegSeg/tree/master/Scripts/pyacwereg/data/regseg_hcp.json}}.
 These settings were obtained manually, driven by the feedback obtained from the post-registration
-  convergence reports \citepalias[like that found in][section S1.3]{esteban_useful_2015}.
+  convergence reports \citepalias[like that found in][section S1.3]{esteban_useful_2016}.
 We released \regseg{} along with the tool to generate such convergence reports.
 
 \paragraph*{Cross-comparison} %
@@ -443,10 +461,19 @@ We reproduced the solution and settings provided with \emph{ExploreDTI}
   \gls*{dti}.
 \emph{ExploreDTI} internally employs \emph{elastix} \citep{klein_elastix_2010} to
   perform registration.
-\revcomment[C21 (R.2)]{%
 The deformation field is correspondingly restricted to the \gls*{pe} direction.
 The settings file for \emph{elastix} is also
-  available\footnote{\url{https://github.com/oesteban/RegSeg/blob/master/Scripts/pyacwereg/data/t2b_elastix_y.txt}}.}
+  available\footnote{\url{https://github.com/oesteban/RegSeg/blob/master/Scripts/pyacwereg/data/t2b_elastix_y.txt}}.
+\revcomment[R\#3-C7\\R\#3-C8]{%
+In this registration scheme, the \gls*{t2} image is the \emph{reference} and
+  the \lowb{} plays the role of \emph{moving} image.
+Therefore, the transform is defined in the coordinate system of the \gls*{t2} image,
+  and for each point in this space it provides the location of the corresponding feature
+  in the \lowb{} image.
+Since the surfaces are defined in the \gls*{t2} --\emph{reference}-- space, their coordinates
+  can be mapped to the \lowb{} space using this transform, obtaining the 
+  \emph{distorted surfaces} corresponding to the \lowb{}-to-\gls*{t2} registration.}
+
 
 \paragraph*{Error measurement}\label{sec:regseg-experiments_evaluation}
 Distortion only occurs along the \gls*{pe} axis of the image, so we computed the
@@ -458,9 +485,11 @@ Distortion only occurs along the \gls*{pe} axis of the image, so we computed the
   \vec{v}_i - \hat{\vec{v}}_i \|,
   \label{eq:regseg-swindex}
   \end{equation}
-  where $\vec{v}_i \subset \gammaset_\text{true}$ are the locations of the total $N_V$ vertices
+  where $\vec{v}_i \subset \gammaset_\text{true}$ are the locations of the total $N_V$ vertices,
+  $a_i$ is the area corresponding to each vertex $\vec{v}_i$,
   and $\hat{\vec{v}}_i \subset \hat{\gammaset}_\text{test}$ are the recovered locations
   that correspond to $\vec{v}_i$.
-\revcomment[C2 (R.1)]{%
-In practice, we only report the \gls*{swindex} for three surfaces (\{$\Gamma_{VdGM}, \Gamma_{WM}, \Gamma_{pial}$\})
-  of crucial interest in whole-brain tractography.}
+In practice, we only report the \gls*{swindex} for three surfaces (\{$\Gamma_\text{VdGM}, \Gamma_\text{WM}, \Gamma_\text{pial}$\})
+  of crucial interest in whole-brain tractography.
+\revcomment[R\#3-C7\\R\#3-C8]{%
+The \gls*{swindex} is always computed on the \gls*{dmri} space.}

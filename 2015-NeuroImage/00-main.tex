@@ -1,12 +1,13 @@
-%\documentclass[5p,authoryear,fleqn]{elsarticle}
+% \documentclass[5p,authoryear,fleqn]{elsarticle}
 \documentclass[3p,authoryear,fleqn]{elsarticle}
 \journal{NeuroImage}
 \usepackage[utf8]{inputenc}
-\defcitealias{esteban_useful_2015}{Supplemental Materials}
+\defcitealias{esteban_useful_2016}{Supplemental Materials}
 \usepackage{xifthen}
 \newboolean{review}
-\setboolean{review}{true}
+\setboolean{review}{false}
 
+\usepackage{tikz}
 % *** MISC UTILITY PACKAGES ***
 \usepackage[mode=buildnew]{standalone}
 \usepackage{gincltex}
@@ -26,8 +27,10 @@
 \graphicspath{{figures/}}
 
 %\usepackage[cmex10,intlimits]{amsmath}
+\usepackage{mathtools}
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{cancel}
 %\usepackage{algorithmic}
 \DeclareMathOperator{\tr}{tr}
 \DeclareMathOperator{\argmax}{argmax}
@@ -48,7 +51,7 @@
 
 \providecommand{\nvec}[1]{\hat{\mathbf{#1}}}
 
-% \providecommand{\suppl}[1]{\citepalias{esteban_useful_2015}  \href{http://figshare.com/s/459c26b4ee8211e493b306ec4bbcf141}{Supplemental Materials}, #1}
+% \providecommand{\suppl}[1]{\citepalias{esteban_useful_2016}  \href{http://figshare.com/s/459c26b4ee8211e493b306ec4bbcf141}{Supplemental Materials}, #1}
 \providecommand{\isores}[2][]{#2\ensuremath{\times}#2\ensuremath{\times}#2%
 \ifthenelse{\equal{#1}{}}{}{ [#1]}\xspace}
 
@@ -74,13 +77,15 @@ an-iso-tro-pic Stud-holme seg-ment-a-tion re-gis-tra-tion map-ped achiev-ed}
 \ifthenelse{\boolean{review}}
 {
   \usepackage[colorinlistoftodos,textsize=tiny, textwidth=1.2cm]{todonotes}
+  \colorlet{revcolor}{blue!70}
   \setlength{\marginparwidth}{1.5cm}
   \reversemarginpar
   % \setlength{\marginparwidth}{2.0cm}
   \newcommand{\revcomment}[2][]{\ifthenelse{\equal{#1}{}}{}{\todo{#1}}%
-  \begingroup \color{blue!70} #2\endgroup}
+  \begingroup \color{revcolor} #2\endgroup}
 }
 {
+  \definecolor{revcolor}{gray}{0.0}
   \newcommand{\todo}[2][]{}
   \newcommand{\revcomment}[2][]{#2}
 }
@@ -96,7 +101,7 @@ an-iso-tro-pic Stud-holme seg-ment-a-tion re-gis-tra-tion map-ped achiev-ed}
 % \dochead{Preprint for ArXiv archiving and pre-submission review}
 
 \title{Surface-driven registration method for the structure-informed segmentation of diffusion MR images\tnoteref{t1}}
-\tnotetext[t1]{Supplemental materials to this work have been submitted to Data in Brief \citep{esteban_useful_2015}.
+\tnotetext[t1]{Supplemental materials to this work have been submitted to Data in Brief \citep{esteban_useful_2016}.
 During the review process, the document is available in doi:\href{http://figshare.com/s/459c26b4ee8211e493b306ec4bbcf141}{10.6084/m9.figshare.1397502}.}
 
 \author[bit,ciber]{Oscar~Esteban\corref{corrauthor}}
@@ -147,9 +152,13 @@ active~surfaces \sep cortical~parcellation \sep diffusion MRI \sep nonlinear~reg
 
 
 % Add appendices
+\onecolumn
 \appendix
 \numberwithin{equation}{section}
 \input{08-appendix-00-shapepriors}
+\ifthenelse{\boolean{review}}
+{}
+{\twocolumn}
 
 %\bibliographystyle{plainnat}
 \bibliographystyle{mystyle}
